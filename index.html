@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wood Data Entry</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+
+        .form-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 30px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 400px;
+        }
+
+        .form-container label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-container input,
+        .form-container select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .form-container button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .form-container button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<script>
+    function formatDateToDDMMYYYY(date) {
+        let d = new Date(date);
+        let day = String(d.getDate()).padStart(2, '0');
+        let month = String(d.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+        let year = d.getFullYear();
+        return `${day}-${month}-${year}`;
+    }
+
+    // Set formatted date on page load
+    window.onload = function () {
+        let today = new Date();
+        document.getElementById("date").value = formatDateToDDMMYYYY(today);
+        updateItemNo();
+    };
+
+    async function submitForm() {
+        const form = document.getElementById("woodForm");
+        let formData = new FormData(form);
+
+        // Convert date format before submitting
+        let dateInput = document.getElementById("date").value;
+        let [day, month, year] = dateInput.split("-");
+        formData.set("date", `${year}-${month}-${day}`); // Convert to YYYY-MM-DD for backend
+
+        try {
+            const response = await fetch("/", {
+                method: "POST",
+                body: formData,
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alert("✅ " + result.message);
+                form.reset();
+                document.getElementById("date").value = formatDateToDDMMYYYY(new Date()); // Reset with correct format
+                updateItemNo();
+            } else {
+                alert("❌ " + result.message);
+            }
+        } catch (error) {
+            console.error("Network error:", error);
+            alert("❌ Network error. Please try again.");
+        }
+    }
+</script>
+
+<body>
+    <div class="form-container">
+        <h1>Wood Data Entry</h1>
+        <form id="woodForm">
+            <label for="date">Date:</label>
+            <input type="date" name="date" id="date" required><br><br>
+
+            <label for="length">Length:</label>
+            <input type="number" step="any" name="length" id="length" min="0" required><br><br>
+
+            <label for="height">Height:</label>
+            <input type="number" step="any" name="height" id="height" min="0" required><br><br>
+
+            <label for="breadth">Breadth:</label>
+            <input type="number" step="any" name="breadth" id="breadth" min="0" required><br><br>
+
+            <label for="item_no">Item No:</label>
+            <input type="text" name="item_no" id="item_no" readonly><br><br>
+
+            <label for="machine_no">Machine No:</label>
+            <select name="machine_no" id="machine_no" required></select><br><br>
+
+            <label for="munsi_name">Munsi Name:</label>
+            <select name="munsi_name" id="munsi_name" required></select><br><br>
+
+            <label for="order_no">Order No:</label>
+            <input type="number" name="order_no" id="order_no" min="0" required><br><br>
+
+            <label for="cft">CFT:</label>
+            <input type="number" step="any" name="cft" id="cft" min="0" required><br><br>
+
+            <button type="button" onclick="submitForm()">Submit</button>
+        </form>
+    </div>
+
+    <script>
+        function populateDropdown(selectId, options) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = ""; // Clear previous options
+            options.forEach(option => {
+                const optionElement = document.createElement("option");
+                optionElement.value = option;
+                optionElement.textContent = option;
+                select.appendChild(optionElement);
+            });
+        }
+
+        // Machine numbers 1-22
+        const machineNumbers = Array.from({ length: 22 }, (_, i) => i + 1);
+
+        // Munsi names (Replace 'fill up' with real names)
+        const munsiNames = [
+            "Ram", "Shyam", "Mohan", "Sohan", "Ravi", "Krishna", "Amit", "Anil", 
+            "Vikas", "Ramesh", "Suresh", "Vishal", "Nikhil", "Arjun", "Karan", 
+            "Raj", "Yash", "Deepak", "Harsh", "Gopal", "Madan", "Kunal"
+        ];
+
+        populateDropdown("machine_no", machineNumbers);
+        populateDropdown("munsi_name", munsiNames);
+
+        function updateItemNo() {
+            const length = document.getElementById("length").value || 0;
+            const height = document.getElementById("height").value || 0;
+            const breadth = document.getElementById("breadth").value || 0;
+            document.getElementById("item_no").value = `${length}*${height}*${breadth}`;
+        }
+
+        document.getElementById("length").addEventListener("input", updateItemNo);
+        document.getElementById("height").addEventListener("input", updateItemNo);
+        document.getElementById("breadth").addEventListener("input", updateItemNo);
+
+        async function submitForm() {
+            const form = document.getElementById("woodForm");
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch("/", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                const result = await response.json(); // Parse JSON response
+
+                if (response.ok) {
+                    alert("✅ " + result.message); // Show success message
+                    form.reset(); // Reset form
+                    document.getElementById("date").value = new Date().toISOString().split("T")[0]; // Reset date
+                    updateItemNo(); // Reset Item No.
+                } else {
+                    alert("❌ " + result.message); // Show error message
+                }
+            } catch (error) {
+                console.error("Network error:", error);
+                alert("❌ Network error. Please try again.");
+            }
+        }
+
+        // Set today's date on page load
+        window.onload = function () {
+            document.getElementById("date").value = new Date().toISOString().split("T")[0];
+            updateItemNo();
+        };
+    </script>
+</body>
+
+</html>
